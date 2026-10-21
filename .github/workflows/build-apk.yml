@@ -1,0 +1,46 @@
+name: Build ARMv7 APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Android NDK & CMake
+        run: |
+          yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager \
+            "ndk;27.0.12077973" \
+            "cmake;3.31.6" \
+            "platforms;android-30" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
+
+      - name: Make Gradlew Executable
+        run: chmod +x gradlew || true
+
+      - name: Build Release APK
+        run: ./gradlew :app:assembleRelease --stacktrace
+
+      - name: Audit Native 32-bit ABI
+        run: |
+          echo "Auditing generated APK native libraries:"
+          unzip -l app/build/outputs/apk/release/app-release-unsigned.apk | grep lib/ || unzip -l app/build/outputs/apk/release/*.apk | grep lib/
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Qwen-Offline-AI-armeabi-v7a-release
+          path: app/build/outputs/apk/release/*.apk
