@@ -88,7 +88,7 @@ bool reset_sampler_locked(float temp = 0.7f, float top_p = 0.9f, float penalty =
         llama_sampler_chain_add(g_sampler, llama_sampler_init_greedy());
     } else {
         if (penalty > 1.0f) {
-            llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(64, penalty, 0.0f, 0.0f));
+            llama_sampler_chain_add(g_sampler, llama_sampler_init_penalties(llama_vocab_n_tokens(llama_model_get_vocab(g_model)), 64, penalty, 0.0f, 0.0f));
         }
         if (top_p < 1.0f) {
             llama_sampler_chain_add(g_sampler, llama_sampler_init_top_p(top_p, 1));
