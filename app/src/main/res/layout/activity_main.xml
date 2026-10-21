@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212">
+
+    <!-- Top Bar -->
+    <LinearLayout
+        android:id="@+id/topBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:background="#1E1E1E"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Qwen Offline AI"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/btnClearHistory"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@android:drawable/ic_menu_delete"
+                android:contentDescription="Clear History"
+                android:tint="#AAAAAA"
+                android:padding="4dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/txtModelStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="No model loaded. Pick a .gguf file below."
+            android:textColor="#4CAF50"
+            android:textSize="12sp"
+            android:singleLine="true"
+            android:ellipsize="middle" />
+
+        <TextView
+            android:id="@+id/txtRamStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Free RAM: Checking... | App RSS: 0MB"
+            android:textColor="#9E9E9E"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- Chips Row -->
+    <HorizontalScrollView
+        android:id="@+id/chipsScroll"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:layout_marginTop="4dp"
+        app:layout_constraintTop_toBottomOf="@id/topBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipPickModel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📁 Pick .gguf"
+                android:textColor="#FFFFFF"
+                app:chipBackgroundColor="#2C2C2C"
+                android:layout_marginEnd="6dp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipPrompt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Prompt: None (Raw)"
+                android:textColor="#FFFFFF"
+                app:chipBackgroundColor="#2C2C2C"
+                android:layout_marginEnd="6dp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSettings"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚙️ Settings"
+                android:textColor="#FFFFFF"
+                app:chipBackgroundColor="#2C2C2C"
+                android:layout_marginEnd="6dp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipBenchmark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚡ Benchmark"
+                android:textColor="#FFFFFF"
+                app:chipBackgroundColor="#2C2C2C" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Chat Messages -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerChat"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:padding="8dp"
+        android:clipToPadding="false"
+        app:layout_constraintTop_toBottomOf="@id/chipsScroll"
+        app:layout_constraintBottom_toTopOf="@id/inputBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Bottom Input Bar -->
+    <LinearLayout
+        android:id="@+id/inputBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="#1E1E1E"
+        android:gravity="center_vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputMessage"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Ask anything..."
+            android:textColorHint="#757575"
+            android:textColor="#FFFFFF"
+            android:background="#2C2C2C"
+            android:padding="12dp"
+            android:maxLines="4"
+            android:textSize="14sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSend"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Send"
+            app:backgroundTint="#4CAF50" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Stop"
+            android:visibility="gone"
+            app:backgroundTint="#F44336" />
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
