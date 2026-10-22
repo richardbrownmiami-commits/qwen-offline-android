@@ -5,6 +5,7 @@ class LlamaNativeEngine {
     external fun nativeLoadModel(path: String, contextSize: Int, threads: Int): Boolean
     external fun nativeUnloadModel()
     external fun nativeModelInfo(): String
+    external fun nativeLastError(): String
     external fun nativeMemoryBytes(): Long
     external fun nativeCancelGeneration()
     external fun nativeGenerateChatStreaming(
