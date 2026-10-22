@@ -193,8 +193,13 @@ class MainActivity : AppCompatActivity() {
                     updateVitals()
                     Toast.makeText(this@MainActivity, "Model loaded successfully!", Toast.LENGTH_SHORT).show()
                 } else {
-                    txtModelStatus.text = "Failed to load model"
-                    Toast.makeText(this@MainActivity, "Could not load model file.", Toast.LENGTH_LONG).show()
+                    val detail = engine.nativeLastError().ifBlank { "No native error details were reported." }
+                    txtModelStatus.text = "Model load failed"
+                    MaterialAlertDialogBuilder(this@MainActivity)
+                        .setTitle("Model load failed")
+                        .setMessage(detail)
+                        .setPositiveButton("OK", null)
+                        .show()
                 }
             }
         }
