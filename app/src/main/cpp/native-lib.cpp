@@ -1,4 +1,5 @@
 #include <jni.h>
+#include <android/log.h>
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -12,10 +13,35 @@
 
 namespace {
 std::mutex g_mutex;
+std::mutex g_load_log_mutex;
+std::string g_load_log;
+std::string g_last_error;
 std::atomic<bool> g_abort{false};
 
 static bool llamaAbortCallback(void *) {
     return g_abort.load(std::memory_order_relaxed);
+}
+
+static void captureLlamaLog(enum ggml_log_level level, const char *text, void *) {
+    if (!text) return;
+    {
+        std::lock_guard<std::mutex> lock(g_load_log_mutex);
+        g_load_log.append(text);
+        constexpr size_t kMaxLogBytes = 12000;
+        if (g_load_log.size() > kMaxLogBytes) {
+            g_load_log.erase(0, g_load_log.size() - kMaxLogBytes);
+        }
+    }
+    int priority = ANDROID_LOG_INFO;
+    if (level >= GGML_LOG_LEVEL_ERROR) priority = ANDROID_LOG_ERROR;
+    else if (level >= GGML_LOG_LEVEL_WARN) priority = ANDROID_LOG_WARN;
+    else if (level <= GGML_LOG_LEVEL_DEBUG) priority = ANDROID_LOG_DEBUG;
+    __android_log_write(priority, "QwenOffline", text);
+}
+
+static std::string recentLlamaLog() {
+    std::lock_guard<std::mutex> lock(g_load_log_mutex);
+    return g_load_log;
 }
 
 llama_model *g_model = nullptr;
@@ -331,7 +357,28 @@ Java_com_qwen_offline_LlamaNativeEngine_nativeLoadModel(JNIEnv *env, jobject, js
     llama_backend_init();
 
     std::string model_path = js(env, path);
-    if (model_path.empty()) return JNI_FALSE;
+    g_last_error.clear();
+    {
+        std::lock_guard<std::mutex> log_lock(g_load_log_mutex);
+        g_load_log.clear();
+    }
+    llama_log_set(captureLlamaLog, nullptr);
+    if (model_path.empty()) {
+        g_last_error = "No model file path was selected.";
+        return JNI_FALSE;
+    }
+    std::ifstream model_file(model_path, std::ios::binary);
+    if (!model_file) {
+        g_last_error = "Cannot open model file: " + model_path + "\nCheck that the selected file still exists and is readable.";
+        return JNI_FALSE;
+    }
+    model_file.seekg(0, std::ios::end);
+    const auto model_bytes = model_file.tellg();
+    model_file.close();
+    if (model_bytes <= 0) {
+        g_last_error = "Model file is empty or could not be measured: " + model_path;
+        return JNI_FALSE;
+    }
 
     const int requested_threads = choose_threads(threads);
     const uint32_t requested_context = static_cast<uint32_t>(std::clamp(ctx, 256, 2048));
@@ -350,11 +397,22 @@ Java_com_qwen_offline_LlamaNativeEngine_nativeLoadModel(JNIEnv *env, jobject, js
     params.load_mode = LLAMA_LOAD_MODE_MMAP;
 
     g_model = llama_model_load_from_file(model_path.c_str(), params);
-    if (!g_model) return JNI_FALSE;
+    if (!g_model) {
+        std::ostringstream error;
+        error << "llama.cpp could not load this GGUF.\nFile size: " << model_bytes << " bytes\nPath: " << model_path;
+        const std::string log = recentLlamaLog();
+        if (!log.empty()) error << "\n\nNative loader details:\n" << log;
+        else error << "\n\nNo native loader details were returned. This can happen if the 32-bit process runs out of address space or memory while mapping the model.";
+        g_last_error = error.str();
+        return JNI_FALSE;
+    }
 
     g_threads = requested_threads;
     g_context = requested_context;
     if (!recreate_context_locked()) {
+        const std::string log = recentLlamaLog();
+        g_last_error = "Model weights loaded, but llama.cpp could not create the inference context (requested " + std::to_string(requested_context) + " tokens).";
+        if (!log.empty()) g_last_error += "\n\nNative details:\n" + log;
         unload_locked();
         return JNI_FALSE;
     }
@@ -373,6 +431,12 @@ extern "C" JNIEXPORT jstring JNICALL
 Java_com_qwen_offline_LlamaNativeEngine_nativeModelInfo(JNIEnv *env, jobject) {
     std::lock_guard<std::mutex> lock(g_mutex);
     return to_jstring(env, model_summary_locked());
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_qwen_offline_LlamaNativeEngine_nativeLastError(JNIEnv *env, jobject) {
+    std::lock_guard<std::mutex> lock(g_mutex);
+    return to_jstring(env, g_last_error);
 }
 
 extern "C" JNIEXPORT jlong JNICALL
